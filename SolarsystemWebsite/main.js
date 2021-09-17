@@ -31,7 +31,7 @@ function init(){
   gridHelper = new THREE.GridHelper(100, 70);
   //scene.add(gridHelper);
 
-  createPlanet('Mercury', 0.49, 5.7);
+  createPlanet('Mercury', 0.00049, 5.7);
   createPlanet('Venus', 0.0012, 10.8);
   createPlanet('Earth', 0.0013, 150);
   createPlanet('Mars', 0.00068, 22.7);
@@ -108,7 +108,7 @@ function createPlanet(name, size, distance){
   orbit.add(planet);
   orbit.add(planetRing);
   orbits.push(orbit);
-  scene.add(orbit);
+  scene.add(orbit, planetLabel);
 }
 
 function animate(){
