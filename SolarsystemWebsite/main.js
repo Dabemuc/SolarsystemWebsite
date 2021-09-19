@@ -4,11 +4,13 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 
 
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 var renderer = new THREE.WebGLRenderer({canvas: document.querySelector('#bg'), antialias: true});
-var orbits = [];
 var controls = new OrbitControls(camera, renderer.domElement);
-var sun, ambientLight, gridHelper;
+var ambientLight;
+var bodies = [];
+var generalSize = 1.5;
+var generalSpeed = 0.01;
 
 init();
 animate();
@@ -18,29 +20,23 @@ function init(){
   renderer.setSize(window.innerWidth, window.innerHeight);
   camera.position.setZ(30);
 
-  var sunTex = new THREE.TextureLoader().load('textures/2k_sun.jpg');
-  sun = new THREE.Mesh(
-    new THREE.SphereGeometry(0.139, 24, 18, 0, Math.PI * 2, 0, Math.PI),
-    new THREE.MeshStandardMaterial({map:sunTex})
-  );
-  scene.add(sun);
-
   ambientLight = new THREE.AmbientLight(0xffffff);
   scene.add(ambientLight);
 
-  gridHelper = new THREE.GridHelper(100, 70);
-  //scene.add(gridHelper);
-
-  createPlanet('Mercury', 0.00049, 5.7);
-  createPlanet('Venus', 0.0012, 10.8);
-  createPlanet('Earth', 0.0013, 150);
-  createPlanet('Mars', 0.00068, 22.7);
-  createPlanet('Jupiter', 0.0143, 77.8);
-  createPlanet('Saturn', 0.01205, 143.4);
-  createPlanet('Uranus', 0.00511, 287);
-  createPlanet('Neptun', 0.00495, 449.5);
-
   Array(1000).fill().forEach(addFlyingStuff);
+
+  createBody('Sun', 0.139 + generalSize, THREE.MathUtils.randFloatSpread(-10, 10) * generalSpeed, 0, Math.random() * generalSpeed);
+  createBody('Mercury', 0.00049 + generalSize, THREE.MathUtils.randFloatSpread(-10, 10) * generalSpeed, 5.7, Math.random() * generalSpeed);
+  createBody('Venus', 0.0012 + generalSize, THREE.MathUtils.randFloatSpread(-10, 10) * generalSpeed, 10.8, Math.random() * generalSpeed);
+  createBody('Earth', 0.0013 + generalSize, THREE.MathUtils.randFloatSpread(-10, 10) * generalSpeed, 150, Math.random() * generalSpeed);
+  createBody('Mars', 0.00068 + generalSize, THREE.MathUtils.randFloatSpread(-10, 10) * generalSpeed, 22.7, Math.random() * generalSpeed);
+  createBody('Jupiter', 0.0143 + generalSize, THREE.MathUtils.randFloatSpread(-10, 10) * generalSpeed, 77.8, Math.random() * generalSpeed);
+  createBody('Saturn', 0.01205 + generalSize, THREE.MathUtils.randFloatSpread(-10, 10) * generalSpeed, 143.4, Math.random() * generalSpeed);
+  createBody('Uranus', 0.00511 + generalSize, THREE.MathUtils.randFloatSpread(-10, 10) * generalSpeed, 287, Math.random() * generalSpeed);
+  createBody('Neptun', 0.00495 + generalSize, THREE.MathUtils.randFloat(-10, 10) * generalSpeed, 449.5, Math.random() * generalSpeed);
+
+  var gridHelper = new THREE.GridHelper(1000, 70);
+  //scene.add(gridHelper);
 }
 
 function addFlyingStuff(){
@@ -48,67 +44,9 @@ function addFlyingStuff(){
   const material = new THREE.MeshStandardMaterial({color: 0xffffff});
   const blib = new THREE.Mesh(geometry, material);
 
-  const [x,y,z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(500));
+  const [x,y,z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(1500));
   blib.position.set(x,y,z);
   scene.add(blib);
-}
-
-function makeLabelCanvas(baseWidth, size, name) {
-  const borderSize = 2;
-  const ctx = document.createElement('canvas').getContext('2d');
-  const font =  `${size}px bold sans-serif`;
-  ctx.font = font;
-  // measure how long the name will be
-  const textWidth = ctx.measureText(name).width;
-
-  const doubleBorderSize = borderSize * 2;
-  const width = baseWidth + doubleBorderSize;
-  const height = size + doubleBorderSize;
-  ctx.canvas.width = width;
-  ctx.canvas.height = height * 2;
-
-  // need to set font again after resizing canvas
-  ctx.font = font;
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-
-  ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-  ctx.fillRect(0, 0, width, height);
-
-  // scale to fit but don't stretch
-  const scaleFactor = Math.min(1, baseWidth / textWidth);
-  ctx.translate(width / 2, height / 2);
-  ctx.scale(scaleFactor, 1);
-  ctx.fillStyle = 'white';
-  ctx.fillText(name, 0, 0);
-
-  return ctx.canvas;
-}
-
-function createPlanet(name, size, distance){
-  const tex = new THREE.TextureLoader().load('textures/' + name + '.jpg');
-  var planet = new THREE.Mesh(
-    new THREE.SphereGeometry(size, 24, 18, 0, Math.PI * 2, 0, Math.PI),
-    new THREE.MeshStandardMaterial({map: tex})
-  );
-  const planetRing = new THREE.Mesh(
-    new THREE.TorusGeometry(distance, 0.01, 16, 100),
-    new THREE.MeshStandardMaterial({color: 0xffffff})
-  )
-  const canvas = makeLabelCanvas(150, 50, name);
-  const texture = new THREE.CanvasTexture(canvas);
-  const planetLabelMaterial = new THREE.SpriteMaterial ({map: texture, transparent: true});
-  var planetLabel = new THREE.Sprite(planetLabelMaterial);
-
-  planet.position.set(distance, 0, 0);
-  planetRing.rotation.set(90, 0, 0);
-  planetLabel.position.set(planet.position.x, planet.position.y, planet.position.z);
-  
-  var orbit = new THREE.Group();
-  orbit.add(planet);
-  orbit.add(planetRing);
-  orbits.push(orbit);
-  scene.add(orbit, planetLabel);
 }
 
 function animate(){
@@ -116,9 +54,34 @@ function animate(){
   controls.update();
   renderer.render(scene, camera);
 
-  date = Date.now() * 1;
-  for (i = 0; i < planets.length; i++){
-    orbits[i].rotation.y += 10;
+  for (var i = 0; i < bodies.length; i++){
+    bodies[i].rot += bodies[i].rotSpeed
+    bodies[i].rotation.set(0, bodies[i].rot, 0);
+    bodies[i].orbit += bodies[i].orbitSpeed;
+    bodies[i].position.set(Math.cos(bodies[i].orbit) * bodies[i].orbitRadius, 0, Math.sin(bodies[i].orbit) * bodies[i].orbitRadius);
   }
 }
 
+
+function createBody(name, size, rotSpeed, orbitRadius, orbitSpeed) {
+  const tex = new THREE.TextureLoader().load('textures/' + name + '.jpg');
+  var body = new THREE.Mesh(
+    new THREE.SphereGeometry(size, 24, 18, 0, Math.PI * 2, 0, Math.PI),
+    new THREE.MeshStandardMaterial({map: tex})
+  );
+
+  bodies.push(body);
+
+  bodies[bodies.length-1].rot = Math.random();
+  bodies[bodies.length-1].rotSpeed = rotSpeed;
+  bodies[bodies.length-1].orbitRadius = orbitRadius;
+  bodies[bodies.length-1].orbit = Math.random() * Math.PI * 2;
+  bodies[bodies.length-1].orbitSpeed = orbitSpeed;
+
+  var ring = new THREE.Mesh(
+    new THREE.TorusGeometry(orbitRadius, 0.1, 16, 100),
+    new THREE.MeshStandardMaterial({color: 0xffffff, wireframe: false})
+  );
+    ring.rotation.x = 1.573;
+  scene.add(body, ring);
+}
